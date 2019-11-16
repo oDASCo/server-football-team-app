@@ -137,7 +137,7 @@ app.get('/generalInfo/:patientId', (req, res) => {
     });
     setTimeout(() => {
         res.send(generalInfo);
-    }, 1000);
+    }, 500);
 });
 
 app.put('/generalInfo', async function (req, res, next) {
@@ -152,9 +152,23 @@ app.put('/generalInfo', async function (req, res, next) {
      WHERE id=${req.body.id}`, (err, rows) => {
                 if (err) throw err;
             });
+            app.get('/generalInfo/:patientId', async (req, res) => {
+                res.setHeader('Access-Control-Allow-Origin', '*');
+                res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
+                try {
+                    await connection.query(`SELECT * FROM mydb.generalInfo WHERE patientId = ${req.params.patientId}`,
+                        (err, rows) => {
+                        if (err) throw err;
+                        generalInfo = rows[0];
+                    });
+                    res.send(generalInfo);
+                } catch (err) {
+                    // res.sendStatus(500);
+                }
+            });
             res.sendStatus(200).send('OK');
         } catch (err) {
-            res.sendStatus(500);
+            // res.sendStatus(500);
         }
     }
 );
@@ -333,9 +347,9 @@ app.post('/medicalExamination', upload.fields(fields), function (req, res, next)
     '${medicalExamination.allowance}', '${medicalExamination.patientId}');`, (err, rows) => {
         if (err) throw err;
     });
-    medicalExamination.doctordiagnosis.forEach(item => {
+    medicalExamination.doctordiagnosis.forEach((item, index) => {
         connection.query(`INSERT INTO mydb.doctordiagnosis 
-        (id, doctorName, diagnosis, medicalExaminationId) VALUES ('${item.id}', '${item.doctorName}', 
+        (id, doctorName, diagnosis, medicalExaminationId) VALUES ('${item.id+index}', '${item.doctorName}', 
         '${item.diagnosis}', '${medicalExamination.id}');`, (err, rows) => {
             if (err) throw err;
         });
@@ -489,7 +503,7 @@ app.post('/injuriesDiseases', upload.fields(fieldsIllness), function (req, res, 
         other: req.body.other,
         patientId: req.body.patientId
     };
-
+    console.log(illness);
     connection.query(`INSERT INTO mydb.injuriesdiseases
     (id, date, releasedInMainGroup, disabilityCountDays, diagnosis, 
     drugTherapy, physiopherapy, other, disabilityTypeId, patientId) 
@@ -533,7 +547,6 @@ app.post('/injuriesDiseases', upload.fields(fieldsIllness), function (req, res, 
             if (err) throw err;
         });
     }
-    console.log(files);
     res.send(illness);
 });
 
