@@ -105,27 +105,37 @@ app.put('/patient', upload.single('file'), function (req, res, next) {
 app.delete('/patient/:id', function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
-    connection.query(`DELETE FROM mydb.fluorography WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-        if (err) throw err;
-    });
-    connection.query(`DELETE FROM mydb.surgicalintervention WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-        if (err) throw err;
-    });
-    connection.query(`DELETE FROM mydb.vaccinationstatus WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-        if (err) throw err;
-    });
-    connection.query(`DELETE FROM mydb.generalinfo WHERE patientId = ${req.params.id}`, (err) => {
-        if (err) throw err;
-    });
+
     deleteIllness(req.params.id);
-    deleteMedExam(req.params.id);
-    connection.query(`DELETE FROM mydb.patient WHERE id = ${req.params.id}`, (err) => {
-        if (err) throw err;
-    });
-    connection.query('SELECT * FROM patient', (err, rows) => {
-        if (err) throw err;
-        patients = rows;
-    });
+
+    let medExams = [];
+    connection.query(`SELECT * FROM mydb.medicalexamination WHERE patientId = ${req.params.id}`,
+        (err, rows) => {
+            medExams = rows;
+            medExams.forEach(item => {
+                deleteMedExam(item.id);
+
+                connection.query(`DELETE FROM mydb.fluorography WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+                    if (err) throw err;
+                });
+                connection.query(`DELETE FROM mydb.surgicalintervention WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+                    if (err) throw err;
+                });
+                connection.query(`DELETE FROM mydb.vaccinationstatus WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+                    if (err) throw err;
+                });
+                connection.query(`DELETE FROM mydb.generalinfo WHERE patientId = ${req.params.id}`, (err) => {
+                    if (err) throw err;
+                });
+                connection.query(`DELETE FROM mydb.patient WHERE id = ${req.params.id}`, (err) => {
+                    if (err) throw err;
+                });
+
+            });
+        });
+
+
+
 });
 
 app.get('/generalInfo/:patientId', (req, res) => {
@@ -141,10 +151,10 @@ app.get('/generalInfo/:patientId', (req, res) => {
 });
 
 app.put('/generalInfo', async function (req, res, next) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
         try {
-              await connection.query(`UPDATE mydb.generalinfo SET birthday="${req.body.date}", 
+            await connection.query(`UPDATE mydb.generalinfo SET birthday="${req.body.date}", 
     weight="${req.body.weight}",
      height="${req.body.height}",
      arterialPressure="${req.body.arterialPressure}",
@@ -158,9 +168,9 @@ app.put('/generalInfo', async function (req, res, next) {
                 try {
                     await connection.query(`SELECT * FROM mydb.generalInfo WHERE patientId = ${req.params.patientId}`,
                         (err, rows) => {
-                        if (err) throw err;
-                        generalInfo = rows[0];
-                    });
+                            if (err) throw err;
+                            generalInfo = rows[0];
+                        });
                     res.send(generalInfo);
                 } catch (err) {
                     // res.sendStatus(500);
@@ -235,6 +245,7 @@ app.post('/vaccinationstatus', function (req, res, next) {
     connection.query(`INSERT INTO mydb.vaccinationstatus VALUES (${req.body.id},
         '${req.body.procedureDate.split("T")[0]}',
         '${req.body.info}',
+        '${req.body.GeneralInfo_id}',
         '${req.body.GeneralInfo_id}')`, (err, rows) => {
         if (err) throw err;
     });
@@ -349,7 +360,7 @@ app.post('/medicalExamination', upload.fields(fields), function (req, res, next)
     });
     medicalExamination.doctordiagnosis.forEach((item, index) => {
         connection.query(`INSERT INTO mydb.doctordiagnosis 
-        (id, doctorName, diagnosis, medicalExaminationId) VALUES ('${item.id+index}', '${item.doctorName}', 
+        (id, doctorName, diagnosis, medicalExaminationId) VALUES ('${item.id + index}', '${item.doctorName}', 
         '${item.diagnosis}', '${medicalExamination.id}');`, (err, rows) => {
             if (err) throw err;
         });
@@ -419,27 +430,27 @@ app.post('/medicalExamination', upload.fields(fields), function (req, res, next)
     res.send(medicalExamination);
 });
 
-function deleteMedExam(patientId) {
-    connection.query(`DELETE FROM mydb.heartultrasound WHERE medicalExaminationId = ${patientId}`, (err) => {
+function deleteMedExam(id) {
+    connection.query(`DELETE FROM mydb.heartultrasound WHERE medicalExaminationId = ${id}`, (err) => {
         if (err) throw err;
     });
-    connection.query(`DELETE FROM mydb.generalurineanalysis WHERE medicalExamnationId = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.generalurineanalysis WHERE medicalExamnationId = ${id}`, (err) => {
         if (err) throw err;
     });
-    connection.query(`DELETE FROM mydb.generalbloodanalysis WHERE medicalExaminationId = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.generalbloodanalysis WHERE medicalExaminationId = ${id}`, (err) => {
         if (err) throw err;
     });
-    connection.query(`DELETE FROM mydb.electrocardiogram WHERE medicalExaminationId = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.electrocardiogram WHERE medicalExaminationId = ${id}`, (err) => {
         if (err) throw err;
     });
-    connection.query(`DELETE FROM mydb.doctordiagnosis WHERE medicalExaminationId = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.doctordiagnosis WHERE medicalExaminationId = ${id}`, (err) => {
         if (err) throw err;
     });
-    connection.query(`DELETE FROM mydb.bloodchemistryanalysis WHERE medicalExaminationId = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.bloodchemistryanalysis WHERE medicalExaminationId = ${id}`, (err) => {
         if (err) throw err;
     });
 
-    connection.query(`DELETE FROM mydb.medicalexamination WHERE id = ${patientId}`, (err) => {
+    connection.query(`DELETE FROM mydb.medicalexamination WHERE id = ${id}`, (err) => {
         if (err) throw err;
     });
 }
