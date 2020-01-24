@@ -43,9 +43,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
 
-app.get('/', (req, res) => {
-    res.send('hello api');
-});
 
 app.get('/patient', (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -106,34 +103,40 @@ app.delete('/patient/:id', function (req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'origin, content-type, accept');
 
-    deleteIllness(req.params.id);
-
-    let medExams = [];
     connection.query(`SELECT * FROM mydb.medicalexamination WHERE patientId = ${req.params.id}`,
         (err, rows) => {
-            medExams = rows;
-            medExams.forEach(item => {
+            rows.forEach(item => {
                 deleteMedExam(item.id);
-
-                connection.query(`DELETE FROM mydb.fluorography WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-                    if (err) throw err;
-                });
-                connection.query(`DELETE FROM mydb.surgicalintervention WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-                    if (err) throw err;
-                });
-                connection.query(`DELETE FROM mydb.vaccinationstatus WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
-                    if (err) throw err;
-                });
-                connection.query(`DELETE FROM mydb.generalinfo WHERE patientId = ${req.params.id}`, (err) => {
-                    if (err) throw err;
-                });
-                connection.query(`DELETE FROM mydb.patient WHERE id = ${req.params.id}`, (err) => {
-                    if (err) throw err;
-                });
-
             });
         });
 
+    connection.query(`SELECT * FROM mydb.injuriesdiseases WHERE patientId = ${req.params.id}`,
+        (err, rows) => {
+            rows.forEach(item => {
+                deleteIllness(item.id);
+            });
+        });
+    setTimeout(() => {
+        connection.query(`DELETE FROM mydb.fluorography WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+            if (err) throw err;
+        });
+        connection.query(`DELETE FROM mydb.surgicalintervention WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+            if (err) throw err;
+        });
+        connection.query(`DELETE FROM mydb.vaccinationstatus WHERE GeneralInfo_id = ${req.params.id}`, (err) => {
+            if (err) throw err;
+        });
+        connection.query(`DELETE FROM mydb.generalinfo WHERE patientId = ${req.params.id}`, (err) => {
+            if (err) throw err;
+        });
+        connection.query(`DELETE FROM mydb.patient WHERE id = ${req.params.id}`, (err) => {
+            if (err) throw err;
+        });
+        connection.query('SELECT * FROM patient', (err, rows) => {
+            if (err) throw err;
+            patients = rows;
+        });
+    }, 2000)
 
 
 });
